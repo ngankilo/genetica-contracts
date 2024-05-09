@@ -40,7 +40,7 @@ contract Controller {
     }
 
     function uploadData(string memory docId) public returns (uint256) {
-        require(!docSubmits[docId], "Document already submitted");
+        require(!docSubmits[docId], "Doc already been submitted");
         sessions[_sessionId] = UploadSession(_sessionId, msg.sender, "", false);
         docSubmits[docId] = true;
         emit UploadData(docId, _sessionId);
@@ -55,9 +55,17 @@ contract Controller {
         uint256 sessionId,
         uint256 riskScore
     ) public {
-        require(sessions[sessionId].user == msg.sender, "Invalid session owner");
-        require(!sessions[sessionId].confirmed, "Session is ended");
-        require(!docSubmits[docId], "Document already submitted");
+        if (bytes(docs[docId].id).length > 0) {
+            revert("Doc already been submitted");
+        }
+        if (sessions[sessionId].confirmed) {
+            revert("Session is ended");
+        }
+        if (sessions[sessionId].user != msg.sender) {
+            revert("Invalid session owner");
+        }
+
+
         docs[docId] = DataDoc(docId, contentHash);
         geneNFT.safeMint(msg.sender);
         pcspToken.reward(msg.sender, riskScore);
