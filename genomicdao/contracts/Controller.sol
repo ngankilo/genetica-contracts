@@ -1,16 +1,14 @@
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.25;
 
-import "@openzeppelin/contracts/utils/Counters.sol";
 import "./NFT.sol";
 import "./Token.sol";
 
 contract Controller {
-    using Counters for Counters.Counter;
 
     //
     // STATE VARIABLES
     //
-    Counters.Counter private _sessionIdCounter;
+    uint private _sessionId;
     GeneNFT public geneNFT;
     PostCovidStrokePrevention public pcspToken;
 
@@ -42,7 +40,12 @@ contract Controller {
     }
 
     function uploadData(string memory docId) public returns (uint256) {
-        // TODO: Implement this method: to start an uploading gene data session. The doc id is used to identify a unique gene profile. Also should check if the doc id has been submited to the system before. This method return the session id
+        require(!docSubmits[docId], "Document already submitted");
+        sessions[_sessionId] = UploadSession(_sessionId, msg.sender, "", false);
+        docSubmits[docId] = true;
+        emit UploadData(docId, _sessionId);
+        _sessionId += 1;
+        return _sessionId;
     }
 
     function confirm(
@@ -52,24 +55,21 @@ contract Controller {
         uint256 sessionId,
         uint256 riskScore
     ) public {
-        // TODO: Implement this method: The proof here is used to verify that the result is returned from a valid computation on the gene data. For simplicity, we will skip the proof verification in this implementation. The gene data's owner will receive a NFT as a ownership certicate for his/her gene profile.
-
-        // TODO: Verify proof, we can skip this step
-
-        // TODO: Update doc content
-
-        // TODO: Mint NFT 
-
-        // TODO: Reward PCSP token based on risk stroke
-
-        // TODO: Close session
+        require(sessions[sessionId].user == msg.sender, "Invalid session owner");
+        require(!sessions[sessionId].confirmed, "Session is ended");
+        require(!docSubmits[docId], "Document already submitted");
+        docs[docId] = DataDoc(docId, contentHash);
+        geneNFT.safeMint(msg.sender);
+        pcspToken.reward(msg.sender, riskScore);
+        sessions[sessionId].confirmed = true;
+        sessions[sessionId].proof = proof;
     }
 
-    function getSession(uint256 sessionId) public view returns(UploadSession memory) {
+    function getSession(uint256 sessionId) public view returns (UploadSession memory) {
         return sessions[sessionId];
     }
 
-    function getDoc(string memory docId) public view returns(DataDoc memory) {
+    function getDoc(string memory docId) public view returns (DataDoc memory) {
         return docs[docId];
     }
 }

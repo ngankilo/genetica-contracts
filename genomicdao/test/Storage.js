@@ -4,6 +4,7 @@ const {
 } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 
 const { expect } = require("chai");
+const {ethers} = require("hardhat");
 
 describe("Controller", function () {
   async function deployControllerFixture() {
@@ -31,7 +32,7 @@ describe("Controller", function () {
         .withArgs("doc1", 0)
     })
 
-    it("Should fail if the doc is submited", async function () {
+    it("Should fail if the doc is submitted", async function () {
       const { controller, addr1, addr2 } = await loadFixture(deployControllerFixture);
 
       const docId = "doc1"
@@ -42,10 +43,9 @@ describe("Controller", function () {
 
       await controller.connect(addr1).uploadData(docId)
       await controller.connect(addr1).confirm(docId, contentHash, proof, sessionId, riskScore)
-
       await expect(
         controller.connect(addr2).uploadData(docId)
-      ).to.be.revertedWith("Doc already been submitted")
+      ).to.be.revertedWith("Document already submitted")
     })
   })
 
@@ -133,7 +133,7 @@ describe("Controller", function () {
 
       await expect(
         controller.connect(addr1).confirm(docId, contentHash, proof, sessionId, riskScore)
-      ).to.be.revertedWith("Doc already been submitted")
+      ).to.be.revertedWith("Document already submitted")
     })
 
     it("Should fail if the session owner is invalid", async function () {
